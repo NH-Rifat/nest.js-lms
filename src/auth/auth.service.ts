@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { UserService } from 'src/user/user.service';
 import { RegisterUserDto } from './dto/registerUser.dto';
 import * as bcrypt from 'bcrypt';
@@ -11,12 +11,13 @@ export class AuthService {
 
   async registerUser(registerUserDto: RegisterUserDto) {
     // Check if user already exists
-    const existingUser = await this.userService.findByEmail(
-      registerUserDto.email,
-    );
-    if (existingUser) {
-      throw new Error('User with this email already exists');
-    }
+    // const existingUser = await this.userService.findByEmail(
+    //   registerUserDto.email,
+    // );
+    // if (existingUser) {
+    //   // throw new Error('User with this email already exists');
+    //   return { message: 'User with this email already exists' };
+    // }
 
     // Hash the password
     const saltRounds = 10;
@@ -41,11 +42,13 @@ export class AuthService {
           email: createdUser.email,
         },
       };
-    } catch (error) {
-      throw new Error(
-        'Failed to create user: ' +
-          (error instanceof Error ? error.message : 'Unknown error'),
-      );
+    } catch (err: unknown) {
+      const e = err as { code?: number };
+      const DUPLICATE_KEY_CODE = 11000;
+      if (e.code === DUPLICATE_KEY_CODE) {
+        throw new ConflictException('User with this email already exists');
+      }
+      throw err;
     }
   }
 }

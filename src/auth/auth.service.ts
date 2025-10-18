@@ -10,22 +10,42 @@ export class AuthService {
   }
 
   async registerUser(registerUserDto: RegisterUserDto) {
-    // console.log(registerUserDto);
+    // Check if user already exists
+    const existingUser = await this.userService.findByEmail(
+      registerUserDto.email,
+    );
+    if (existingUser) {
+      throw new Error('User with this email already exists');
+    }
+
+    // Hash the password
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(
       registerUserDto.password,
       saltRounds,
     );
-    // console.log(registerUserDto.password, hashedPassword);
 
-    // logic for user register
-    /*
-      1. check if user email already exists
-      2. hash the password
-      3. save the user to the database
-      4. generate a JWT token
-      5. return the token
-    */
-    return this.userService.createUser(registerUserDto, hashedPassword);
+    try {
+      // Create user in database
+      const createdUser = await this.userService.createUser(
+        registerUserDto,
+        hashedPassword,
+      );
+
+      // Return user data without password
+      return {
+        message: 'User created successfully',
+        user: {
+          fname: createdUser.fname,
+          lname: createdUser.lname,
+          email: createdUser.email,
+        },
+      };
+    } catch (error) {
+      throw new Error(
+        'Failed to create user: ' +
+          (error instanceof Error ? error.message : 'Unknown error'),
+      );
+    }
   }
 }

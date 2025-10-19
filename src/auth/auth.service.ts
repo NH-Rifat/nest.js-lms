@@ -1,12 +1,17 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { UserService } from 'src/user/user.service';
 import { RegisterUserDto } from './dto/registerUser.dto';
 import * as bcrypt from 'bcrypt';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly userService: UserService) {
+  constructor(
+    private readonly userService: UserService,
+    private readonly jwtService: JwtService,
+  ) {
     this.userService = userService;
+    this.jwtService = jwtService;
   }
 
   async registerUser(registerUserDto: RegisterUserDto) {
@@ -26,29 +31,35 @@ export class AuthService {
       saltRounds,
     );
 
-    try {
-      // Create user in database
-      const createdUser = await this.userService.createUser(
-        registerUserDto,
-        hashedPassword,
-      );
+    // try {
+    // Create user in database
+    const createdUser = await this.userService.createUser({
+      ...registerUserDto,
+      password: hashedPassword,
+    });
 
-      // Return user data without password
-      return {
-        message: 'User created successfully',
-        user: {
-          fname: createdUser.fname,
-          lname: createdUser.lname,
-          email: createdUser.email,
-        },
-      };
-    } catch (err: unknown) {
-      const e = err as { code?: number };
-      const DUPLICATE_KEY_CODE = 11000;
-      if (e.code === DUPLICATE_KEY_CODE) {
-        throw new ConflictException('User with this email already exists');
-      }
-      throw err;
-    }
+    const payload = { sub: createdUser?._id };
+    const token = await this.jwtService.signAsync(payload);
+    console.log(token);
+    return { access_token: token };
+
+    // Return user data without password
+    //     return {
+    //       message: 'User created successfully',
+    //       user: {
+    //         fname: createdUser.fname,
+    //         lname: createdUser.lname,
+    //         email: createdUser.email,
+    //       },
+    //     };
+    //   } catch (err: unknown) {
+    //     const e = err as { code?: number };
+    //     const DUPLICATE_KEY_CODE = 11000;
+    //     if (e.code === DUPLICATE_KEY_CODE) {
+    //       throw new ConflictException('User with this email already exists');
+    //     }
+    //     throw err;
+    //   }
+    // }
   }
 }

@@ -25,4 +25,12 @@ export class UserService {
       throw err;
     }
   }
+
+  async findByEmail(email: string) {
+    return this.userModel.findOne({ email });
+  }
+
+  async getUserById(userId: string) {
+    return this.userModel.findById({ _id: userId });
+  }
 }

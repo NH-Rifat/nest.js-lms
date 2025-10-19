@@ -1,9 +1,25 @@
-import { Body, Controller, Post, Request, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Request,
+  UseGuards,
+  UnauthorizedException,
+  NotFoundException,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterUserDto } from './dto/registerUser.dto';
 import { LoginUserDto } from './dto/loginUser.dto';
 import { AuthGuard } from './auth.guard';
 import { UserService } from 'src/user/user.service';
+
+interface AuthRequest extends Request {
+  user?: {
+    sub: string;
+    email: string;
+  };
+}
 
 @Controller('auth')
 export class AuthController {
@@ -25,8 +41,28 @@ export class AuthController {
   }
 
   @UseGuards(AuthGuard)
-  @Post('profile')
-  async getProfile(@Request() req) {
-    const userId = req.user?.sub;
+  @Get('profile')
+  async getProfile(@Request() req: AuthRequest) {
+    console.log({ req });
+    const userId = req?.user?.sub as string;
+    console.log({ userId });
+
+    if (!userId) {
+      throw new UnauthorizedException('User ID not found in token');
+    }
+
+    const user = await this.userService.getUserById(userId);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    console.log({ user });
+    return {
+      id: String(user._id),
+      fname: user.fname,
+      lname: user.lname,
+      email: user.email,
+    };
   }
 }

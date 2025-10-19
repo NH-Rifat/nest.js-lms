@@ -30,9 +30,10 @@ export class AuthService {
       password: hashedPassword,
     });
 
-    const payload = { sub: createdUser?._id };
+    const payload = { sub: String(createdUser._id), email: createdUser.email };
     const token = await this.jwtService.signAsync(payload);
-    console.log(token);
+    console.log('Generated token:', token);
+    console.log('Payload:', payload);
     return { access_token: token };
   }
 
@@ -50,8 +51,10 @@ export class AuthService {
       throw new Error('Invalid password');
     }
 
-    const payload = { sub: user._id };
+    const payload = { sub: String(user._id), email: user.email };
     const token = await this.jwtService.signAsync(payload);
+    console.log('Login token:', token);
+    console.log('Login payload:', payload);
     return { access_token: token };
   }
 }

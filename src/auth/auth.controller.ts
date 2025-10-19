@@ -43,9 +43,7 @@ export class AuthController {
   @UseGuards(AuthGuard)
   @Get('profile')
   async getProfile(@Request() req: AuthRequest) {
-    console.log({ req });
     const userId = req?.user?.sub as string;
-    console.log({ userId });
 
     if (!userId) {
       throw new UnauthorizedException('User ID not found in token');
